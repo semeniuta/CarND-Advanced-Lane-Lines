@@ -1,4 +1,3 @@
-import udacityhelpers as udacity
 import lanelines
 from compgraph import CompGraph, CompGraphRunner
 import numpy as np
@@ -6,12 +5,12 @@ import cv2
 
 
 func_dict = {
-    'grayscale': udacity.grayscale,
+    'grayscale': lanelines.grayscale,
     'get_image_shape': lambda im : im.shape,
-    'canny': udacity.canny,
+    'canny': lanelines.canny,
     'define_lanes_region': lanelines.define_lanes_region,
     'apply_region_mask': lanelines.apply_region_mask,
-    'gaussian_blur': udacity.gaussian_blur,
+    'gaussian_blur': lanelines.gaussian_blur,
     'hough_lines': lanelines.find_hough_lines,
     'compute_line_tangents': lanelines.compute_line_tangents,
     'extend_lines': lanelines.extend_lane_lines_grouped_by_slopes,

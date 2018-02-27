@@ -12,6 +12,17 @@ def h2e(x):
     x = np.array(x)
     return x[:2] / x[2]
 
+def grayscale(im, flag=cv2.COLOR_BGR2GRAY):
+    return cv2.cvtColor(im, flag)
+
+
+def canny(img, low_threshold, high_threshold):
+    return cv2.Canny(img, low_threshold, high_threshold)
+
+
+def gaussian_blur(img, kernel_size):
+    return cv2.GaussianBlur(img, (kernel_size, kernel_size), 0)
+
 
 def define_lanes_region(n_rows, n_cols, x_from=450, x_to=518, y_lim=317, left_offset=50, right_offset=0):
 
@@ -137,6 +148,14 @@ def weighted_average_lines_endpoints(lines, distances_to_bottom):
     mu_x2 = (x2 * weights).sum() / weights_sum
 
     return np.array([mu_x1, mu_y1, mu_x2, mu_y2], dtype=np.int32)
+
+
+def weighted_img(im, initial_im, alpha=0.8, beta=1., gamma=0.):
+    '''
+    dst = initial_im*alpha + im*beta + gamma;
+    '''
+
+    return cv2.addWeighted(initial_im, alpha, im, beta, gamma)
 
 
 def draw_line(canvas_im, line, color=[255, 0, 0], thickness=2):

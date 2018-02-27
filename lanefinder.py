@@ -5,7 +5,6 @@ import cv2
 
 from compgraph import CompGraph, CompGraphRunner
 
-import udacityhelpers as udacity
 import lanelines
 
 class LaneFinder:
@@ -33,7 +32,7 @@ def create_objects(cg, frozen, line_color=[255, 0, 0], line_thickness=5, alpha=0
         canvas = np.zeros_like(im)
         lanelines.draw_line(canvas, left, color=line_color, thickness=line_thickness)
         lanelines.draw_line(canvas, right, color=line_color, thickness=line_thickness)
-        res_im = udacity.weighted_img(im, canvas, alpha, beta, 0)
+        res_im = lanelines.weighted_img(im, canvas, alpha, beta, 0)
 
         return res_im
 

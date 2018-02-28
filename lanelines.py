@@ -5,12 +5,13 @@ import cv2
 
 
 def e2h(x):
-    return np.array([x[0], x[1], 1.0])
+    return np.array([x[0], x[1], 1.])
 
 
 def h2e(x):
     x = np.array(x)
     return x[:2] / x[2]
+
 
 def grayscale(im, flag=cv2.COLOR_BGR2GRAY):
     return cv2.cvtColor(im, flag)
@@ -22,6 +23,77 @@ def canny(img, low_threshold, high_threshold):
 
 def gaussian_blur(img, kernel_size):
     return cv2.GaussianBlur(img, (kernel_size, kernel_size), 0)
+
+
+def sobel_x(im):
+    return cv2.Sobel(im, cv2.CV_64F, 1, 0)
+
+
+def sobel_y(im):
+    return cv2.Sobel(im, cv2.CV_64F, 0, 1)
+
+
+def sobel_abs(sobel):
+    return scale_image_255(np.abs(sobel))
+
+
+def sobel_magnitude(sobelx, sobely):
+    return np.sqrt(np.square(sobelx) + np.square(sobely))
+
+
+def sobel_direction(sobelx, sobely):
+    return np.arctan2(np.abs(sobely), np.abs(sobelx))
+
+
+def find_cbc(img, pattern_size, searchwin_size=5):
+
+    findcbc_flags = cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_FILTER_QUADS
+    res = cv2.findChessboardCorners(img, pattern_size, flags=findcbc_flags)
+
+    found, corners = res
+    if found:
+        term = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_COUNT, 30, 0.1)
+        cv2.cornerSubPix(img, corners, (searchwin_size, searchwin_size), (-1, -1), term)
+
+    return res
+
+
+def reformat_corners(corners):
+    return corners.reshape(-1, 2)
+
+
+def get_rectangle_corners_from_cbc(cbc, nx, ny):
+
+    points = np.array([
+        cbc[0,:],
+        cbc[nx-1,:],
+        cbc[-1,:],
+        cbc[nx*ny-nx,:],
+    ], dtype=np.float32)
+
+    return points
+
+
+def get_ractangle_corners_in_image(im_sz, offset_x, offset_y):
+
+    points = np.array([
+        [offset_x, offset_y],
+        [im_sz[0]-offset_x, offset_y],
+        [im_sz[0]-offset_x, im_sz[1]-offset_y],
+        [offset_x, im_sz[1]-offset_y]
+    ], dtype=np.float32)
+
+    return points
+
+
+def scale_image_255(im):
+    return np.uint8(255 * (im / np.max(im)))
+
+
+def mask_threashold_range(im, thresh_min, thresh_max):
+
+    binary_output = (sb >= thresh_min) & (sb < thresh_max)
+    return binary_output
 
 
 def define_lanes_region(n_rows, n_cols, x_from=450, x_to=518, y_lim=317, left_offset=50, right_offset=0):

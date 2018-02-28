@@ -45,23 +45,6 @@ def sobel_direction(sobelx, sobely):
     return np.arctan2(np.abs(sobely), np.abs(sobelx))
 
 
-def find_cbc(img, pattern_size, searchwin_size=5):
-
-    findcbc_flags = cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_FILTER_QUADS
-    res = cv2.findChessboardCorners(img, pattern_size, flags=findcbc_flags)
-
-    found, corners = res
-    if found:
-        term = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_COUNT, 30, 0.1)
-        cv2.cornerSubPix(img, corners, (searchwin_size, searchwin_size), (-1, -1), term)
-
-    return res
-
-
-def reformat_corners(corners):
-    return corners.reshape(-1, 2)
-
-
 def get_rectangle_corners_from_cbc(cbc, nx, ny):
 
     points = np.array([

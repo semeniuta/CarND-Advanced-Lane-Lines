@@ -16,6 +16,11 @@ def open_image(fname, convert_to_rgb=False):
     return cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
 
+def get_im_wh(im):
+    h, w = im.shape[:2]
+    return w, h
+
+
 def e2h(x):
     return np.array([x[0], x[1], 1.])
 

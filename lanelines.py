@@ -3,6 +3,18 @@ import matplotlib.image as mpimg
 import numpy as np
 import cv2
 
+def open_image(fname, convert_to_rgb=False):
+
+    im = cv2.imread(fname)
+
+    if len(im.shape) == 2:
+        return im
+
+    if not convert_to_rgb:
+        return im
+
+    return cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+
 
 def e2h(x):
     return np.array([x[0], x[1], 1.])

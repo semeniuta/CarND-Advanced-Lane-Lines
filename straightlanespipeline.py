@@ -15,8 +15,7 @@ func_dict = {
     'compute_line_tangents': lanelines.compute_line_tangents,
     'extend_lines': lanelines.extend_lane_lines_grouped_by_slopes,
     'average_endpoints_left': lanelines.average_lines_endpoints,
-    'average_endpoints_right': lanelines.average_lines_endpoints,
-    'lines_distances_to_bottom': lanelines.lines_distances_to_bottom
+    'average_endpoints_right': lanelines.average_lines_endpoints
 }
 
 func_io = {
@@ -33,17 +32,16 @@ func_io = {
     'compute_line_tangents': ('lines', 'tangents'),
     'extend_lines': (('lines', 'tangents', 'y_lim', 'n_rows', 'abs_slope_threshold'), ('extended_lines_left', 'extended_lines_right')),
     'average_endpoints_left': ('extended_lines_left', 'avg_line_left'),
-    'average_endpoints_right': ('extended_lines_right', 'avg_line_right'),
-    'lines_distances_to_bottom': (('lines', 'n_rows'), 'dist_to_bottom')
+    'average_endpoints_right': ('extended_lines_right', 'avg_line_right')
 
 }
 
 computational_graph = CompGraph(func_dict, func_io)
 
 parameters = {
-    'x_from': 450,
-    'x_to': 518,
-    'y_lim': 317,
+    'x_from': 560,
+    'x_to': 710,
+    'y_lim': 450,
     'left_offset': 50,
     'right_offset': 0,
     'blur_kernel': 11,

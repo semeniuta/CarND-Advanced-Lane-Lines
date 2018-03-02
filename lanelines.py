@@ -74,7 +74,7 @@ def get_rectangle_corners_from_cbc(cbc, nx, ny):
     return points
 
 
-def get_ractangle_corners_in_image(im_sz, offset_x, offset_y):
+def get_rectangle_corners_in_image(im_sz, offset_x, offset_y):
 
     points = np.array([
         [offset_x, offset_y],

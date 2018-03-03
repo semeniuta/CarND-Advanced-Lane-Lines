@@ -82,5 +82,5 @@ if __name__ == '__main__':
 
     cm, dc = do_calibration('camera_cal', psize=(9, 6), sqsize=1.)
 
-    np.save('camera_cal_results/camera_matrix.npy', cm)
-    np.save('camera_cal_results/dist_coefs.npy', dc)
+    np.save('serialize/camera_matrix.npy', cm)
+    np.save('serialize/dist_coefs.npy', dc)

@@ -181,6 +181,18 @@ def average_lines_endpoints(lines):
     return np.array(lines.mean(axis=0), dtype=np.int32)
 
 
+def move_line(line, offset_x=0., offset_y=0.):
+
+    x1, y1, x2, y2 = line
+
+    return np.array([
+        x1 + offset_x,
+        y1 + offset_y,
+        x2 + offset_x,
+        y2 + offset_y
+    ])
+
+
 def lines_distances_to_bottom(lines, n_rows):
 
     def dist_to_bottom(line):

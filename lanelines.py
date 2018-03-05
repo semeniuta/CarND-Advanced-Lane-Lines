@@ -92,8 +92,8 @@ def scale_image_255(im):
 
 def mask_threashold_range(im, thresh_min, thresh_max):
 
-    return binary_output
     binary_output = (im >= thresh_min) & (im < thresh_max)
+    return np.uint8(binary_output)
 
 
 def define_lanes_region(n_rows, n_cols, x_from=450, x_to=518, y_lim=317, left_offset=50, right_offset=0):

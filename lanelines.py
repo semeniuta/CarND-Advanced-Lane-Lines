@@ -16,6 +16,12 @@ def open_image(fname, convert_to_rgb=False):
     return cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
 
+def open_and_undistort_image(fname, cm, dc, convert_to_rgb=False):
+
+    im = open_image(fname, convert_to_rgb)
+    return cv2.undistort(im, cm, dc)
+
+
 def get_im_wh(im):
     h, w = im.shape[:2]
     return w, h
@@ -280,3 +286,9 @@ def visualize_test_images(images, proc_func=lambda im : im):
     for i, im in enumerate(images):
         plt.subplot(3, 2, i+1)
         plt.imshow(proc_func(im))
+
+
+def imshow_bgr(im, axis_setting='off'):
+
+    plt.axis(axis_setting)
+    plt.imshow( cv2.cvtColor(im, cv2.COLOR_BGR2RGB) )

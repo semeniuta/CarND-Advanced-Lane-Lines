@@ -36,17 +36,16 @@ def define_flat_plane_on_road(images, x_offset=0):
     return res
 
 
-if __name__ == '__main__':
+def prepare_perspective_transforms(straight_images, canvas_sz, offset_x, offset_y):
 
-    im_straight_1 = lanelines.open_image('test_images/straight_lines1.jpg')
-    im_straight_2 = lanelines.open_image('test_images/straight_lines2.jpg')
-
-    points = define_flat_plane_on_road(
-        (im_straight_1, im_straight_2),
+    warp_src = define_flat_plane_on_road(
+        straight_images,
         x_offset=0
     )
 
-    print('Road plane points:')
-    print(points)
+    warp_dst = lanelines.get_rectangle_corners_in_image(canvas_sz, offset_x, offset_y)
 
-    np.save('serialize/planepoints.npy', points)
+    M = cv2.getPerspectiveTransform(warp_src, warp_dst)
+    Minv = cv2.getPerspectiveTransform(warp_dst, warp_src)
+
+    return M, Minv

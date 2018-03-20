@@ -102,6 +102,246 @@ def mask_threashold_range(im, thresh_min, thresh_max):
     return np.uint8(binary_output)
 
 
+def warp(im, M, canvas_sz):
+    return cv2.warpPerspective(im, M, canvas_sz, flags=cv2.INTER_LINEAR)
+
+
+def convert_to_HLS(im):
+    return cv2.cvtColor(im, cv2.COLOR_RGB2HLS)
+
+
+def weighted_sum_images(images, weights):
+
+    assert len(weights) == len(images)
+
+    nonzero_indices = np.nonzero(weights)[0]
+    if len(nonzero_indices) < 2:
+        raise Exception('At least 2 non-zero weights are required')
+
+    first, second = nonzero_indices[:2]
+    res = cv2.addWeighted(images[first], weights[first], images[second], weights[second], 0)
+
+    if len(nonzero_indices) == 2:
+        return res
+
+    for i in nonzero_indices[2:]:
+        res = cv2.addWeighted(res, 1., images[i], weights[i], 0)
+
+    return res
+
+
+def bitwise_or(images):
+
+    assert len(images) > 0
+
+    if len(images) == 1:
+        return images[0]
+
+    res = cv2.bitwise_or(images[0], images[1])
+    if len(images) == 2:
+        return res
+
+    for im in images[2:]:
+        res = cv2.bitwise_or(res, im)
+
+    return res
+
+
+def weighted_HLS(H, L, S, weights):
+    return weighted_sum_images([H, L, S], weights)
+
+
+def add_contrast(im, gain):
+    gained = gain * im
+    return scale_image_255(gained)
+
+
+def sobel_combo(im):
+
+    sobelx = sobel_x(im)
+    sobely = sobel_y(im)
+
+    magnitude = sobel_magnitude(sobelx, sobely)
+    direction = sobel_direction(sobelx, sobely)
+
+    return scale_image_255(magnitude), scale_image_255(direction)
+
+
+def scaled_sobel_x(im):
+    return scale_image_255( sobel_x(im) )
+
+
+def morphological_close(im, kernel=(3, 3)):
+    return cv2.morphologyEx(im, cv2.MORPH_CLOSE, kernel)
+
+
+def get_hls_channels(im):
+
+    hls = convert_to_HLS(im)
+
+    H = hls[:,:,0]
+    L = hls[:,:,1]
+    S = hls[:,:,2]
+
+    return H, L, S
+
+def gray(im):
+    return cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+
+def gather_thresholded_images(*images):
+    return images
+
+def lane_cells(im, nx, ny, threshold=20):
+
+    cells = divide_image_to_cells(im, nx, ny)
+
+    res = []
+
+    for i in range(ny):
+
+        idx_from = i * nx
+        idx_to = i * nx + nx
+
+        rowcells = cells[idx_from:idx_to]
+
+        sums = np.array([np.sum(cell) for cell in rowcells])
+        max_j = np.argmax(sums)
+
+        if sums[max_j] > threshold:
+            res.append( (i, max_j) )
+
+    return np.array(res)
+
+
+def lane_cells_real_coords(lanecells, im, nx, ny):
+
+    rows, cols= im.shape[:2]
+
+    cell_sz_x = cols // nx
+    cell_sz_y = rows // ny
+
+    points = np.zeros_like(lanecells)
+
+    for i in range(len(lanecells)):
+        idx_row, idx_col = lanecells[i, :]
+        x = idx_col * cell_sz_x + cell_sz_x / 2
+        y = idx_row * cell_sz_y + cell_sz_y / 2
+        points[i, :] = (x, y)
+
+    return points
+
+
+def divide_image_to_cells(im, nx, ny):
+
+    rows, cols= im.shape[:2]
+
+    assert rows % ny == 0
+    assert cols % nx == 0
+
+    offset_x = cols // nx
+    offset_y = rows // ny
+
+    cells = []
+
+    for j in range(ny):
+        for i in range(nx):
+
+            x_from = i * offset_x
+            x_to = x_from + offset_x
+            y_from = j * offset_y
+            y_to = y_from + offset_y
+
+            cell = im[y_from:y_to, x_from:x_to]
+
+            cells.append(cell)
+
+    return cells
+
+
+def show_cells(cells, nx, ny):
+
+    for i, cell in enumerate(cells):
+        plt.subplot(ny, nx, i+1)
+        plt.axis('off')
+        plt.imshow(cell)
+
+
+def split_image_lr(im):
+
+    cols = im.shape[1]
+    middle = cols // 2
+    return im[:, :middle], im[:, middle:]
+
+
+def split_image_lr_and_show(im):
+
+    left, right = split_image_lr(im)
+
+    plt.figure()
+
+    plt.subplot(1, 2, 1)
+    plt.axis('off')
+    plt.imshow(left)
+
+    plt.subplot(1, 2, 2)
+    plt.axis('off')
+    plt.imshow(right)
+
+
+def get_polynomial_2(coefs):
+
+    a, b, c = coefs
+
+    def f(y):
+        return a * (y**2) + b * y + c
+
+    return f
+
+def fit_lane_polynomials(im, nx=50, ny=100, lanecell_threshold=70):
+
+    left, right = split_image_lr(im)
+
+    target_cells_left = lane_cells(left, nx, ny, threshold=70)
+    target_cells_coords_left = lane_cells_real_coords(target_cells_left, left, nx, ny)
+    p_coefs_left = np.polyfit(target_cells_coords_left[:, 1], target_cells_coords_left[:, 0], 2)
+
+    target_cells_right = lane_cells(right, nx, ny, threshold=70)
+    target_cells_coords_right = lane_cells_real_coords(target_cells_right, right, nx, ny)
+    target_cells_coords_right[:, 0] += left.shape[1]
+    p_coefs_right = np.polyfit(target_cells_coords_right[:, 1], target_cells_coords_right[:, 0], 2)
+
+    return p_coefs_left, p_coefs_right, target_cells_coords_left, target_cells_coords_right
+
+
+
+def get_lane_polynomials_points(warped_im, p_coefs_left, p_coefs_right):
+
+    poly_left = get_polynomial_2(p_coefs_left)
+    poly_right = get_polynomial_2(p_coefs_right)
+
+    poly_y = np.linspace(0, warped_im.shape[0])
+    poly_x_left = poly_left(poly_y)
+    poly_x_right = poly_right(poly_y)
+
+    return poly_y, poly_x_left, poly_x_right
+
+
+def lanefill(image, warped, Minv, poly_y, poly_x_left, poly_x_right):
+
+    canvas = np.zeros_like(warped).astype(np.uint8)
+
+    pts_left = np.array([np.transpose(np.vstack([poly_x_left, poly_y]))])
+    pts_right = np.array([np.flipud(np.transpose(np.vstack([poly_x_right, poly_y])))])
+    pts = np.hstack((pts_left, pts_right)).astype(np.int32)
+
+    cv2.fillPoly(canvas, [pts], (0, 255, 0))
+
+    newwarp = cv2.warpPerspective(canvas, Minv, (image.shape[1], image.shape[0]))
+
+    result = cv2.addWeighted(image, 1, newwarp, 0.3, 0)
+    return result
+
+
 def define_lanes_region(n_rows, n_cols, x_from=450, x_to=518, y_lim=317, left_offset=50, right_offset=0):
 
     vertices = np.array([[
@@ -258,6 +498,7 @@ def draw_lines_on_image(canvas_im, lines, color=[255, 0, 0], thickness=2):
 
     for i in range(lines.shape[0]):
         draw_line(canvas_im, lines[i, :], color, thickness)
+
 
 def plot_line(line, **kvargs):
 

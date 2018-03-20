@@ -8,13 +8,14 @@ import cv2
 from moviepy.editor import VideoFileClip
 from networkx.drawing.nx_agraph import to_agraph
 
-import lanespipeline
+import newlanespipeline
 import lanefinder
 from compgraph import CompGraph, CompGraphRunner
+from roadplane import prepare_perspective_transforms_custom
 
 
-COMP_GRAPH = lanespipeline.computational_graph
-DEFAULT_PARAMS = lanespipeline.parameters
+COMP_GRAPH = newlanespipeline.computational_graph
+DEFAULT_PARAMS = newlanespipeline.parameters
 
 
 def create_dir(directory):
@@ -27,13 +28,22 @@ def get_full_paths_to_files(files_dir, filenames):
     return [os.path.join(files_dir, f) for f in filenames]
 
 
-def process_images(im_filenames, cg, params):
+def create_processing_func(cg, cg_params, M, M_inv):
 
-    finder, find_and_draw_lanes = lanefinder.create_objects(cg, params)
+    runner = CompGraphRunner(cg, frozen_tokens=cg_params)
+
+    def process(im):
+        runner.run(image=im, M=M, Minv=Minv)
+        return runner['im_lane_rendering']
+
+    return process
+
+
+def process_images(im_filenames, processing_func):
 
     images = (mpimg.imread(fname) for fname in im_filenames)
 
-    return (find_and_draw_lanes(im) for im in images)
+    return (processing_func(im) for im in images)
 
 
 def save_images(images, destination_filenames):
@@ -42,13 +52,11 @@ def save_images(images, destination_filenames):
         mpimg.imsave(fname, im)
 
 
-def process_and_save_video(video_fname_src, video_fname_dst, cg, params):
-
-    finder, find_and_draw_lanes = lanefinder.create_objects(cg, params)
+def process_and_save_video(video_fname_src, video_fname_dst, processing_func):
 
     video_src = VideoFileClip(video_fname_src)
 
-    video_dst = video_src.fl_image(find_and_draw_lanes)
+    video_dst = video_src.fl_image(processing_func)
     video_dst.write_videofile(video_fname_dst, audio=False)
 
 
@@ -66,30 +74,26 @@ if __name__ == '__main__':
     ''' INITIALIZATION '''
 
     im_dir_src = 'test_images'
-    im_dir_dst = 'test_images_output'
-    create_dir(im_dir_dst)
-
     im_files_src = get_full_paths_to_files(im_dir_src, os.listdir(im_dir_src))
-    im_files_dst = get_full_paths_to_files(im_dir_dst, os.listdir(im_dir_src))
 
-    video_dir_src = 'test_videos'
-    video_dir_dst = 'test_videos_output'
-    create_dir(video_dir_dst)
+    video_files = ('project_video.mp4', 'challenge_video.mp4', 'harder_challenge_video.mp4')
+    video_files_src = get_full_paths_to_files('.', video_files)
 
-    video_files = ('solidWhiteRight.mp4', 'solidYellowLeft.mp4')
-    video_files_src = get_full_paths_to_files(video_dir_src, video_files)
-    video_files_dst = get_full_paths_to_files(video_dir_dst, video_files)
+    dir_dst = 'output'
+    create_dir(dir_dst)
 
-    params_1 = DEFAULT_PARAMS.copy()
-    params_1['canny_lo'] = 50
-    params_1['canny_hi'] = 150
+    im_files_dst = get_full_paths_to_files(dir_dst, os.listdir(im_dir_src))
+    video_files_dst = get_full_paths_to_files(dir_dst, video_files)
+
 
     ''' MEDIA GENERATION '''
 
-    visualize_pipeline('pipeline.png')
+    M, Minv = prepare_perspective_transforms_custom()
+    process = create_processing_func(COMP_GRAPH, DEFAULT_PARAMS, M, Minv)
 
-    images_dst = process_images(im_files_src, COMP_GRAPH, DEFAULT_PARAMS)
+    visualize_pipeline(os.path.join(dir_dst, 'pipeline.png'))
+
+    images_dst = process_images(im_files_src, process)
     save_images(images_dst, im_files_dst)
 
-    process_and_save_video(video_files_src[0], video_files_dst[0], COMP_GRAPH, DEFAULT_PARAMS)
-    process_and_save_video(video_files_src[1], video_files_dst[1], COMP_GRAPH, params_1)
+    process_and_save_video(video_files_src[0], video_files_dst[0], process)

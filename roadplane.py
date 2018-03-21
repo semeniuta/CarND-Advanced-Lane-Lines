@@ -51,9 +51,8 @@ def prepare_perspective_transforms(straight_images, canvas_sz, offset_x, offset_
     return M, Minv
 
 
-def prepare_perspective_transforms_custom():
+def prepare_perspective_transforms_custom(canvas_sz=(500, 1500)):
 
-    CANVAS_SZ = (500, 1500)
     OFFSET_X = 100
     OFFSET_Y = 0
 
@@ -66,7 +65,7 @@ def prepare_perspective_transforms_custom():
 
     warp_src = define_flat_plane_on_road(straight_images_undist, x_offset=0)
     warp_src[1, 0] += 8 # <- a hack
-    warp_dst = lanelines.get_rectangle_corners_in_image(CANVAS_SZ, offset_x=OFFSET_X, offset_y=OFFSET_Y)
+    warp_dst = lanelines.get_rectangle_corners_in_image(canvas_sz, offset_x=OFFSET_X, offset_y=OFFSET_Y)
 
     M = cv2.getPerspectiveTransform(warp_src, warp_dst)
     Minv = cv2.getPerspectiveTransform(warp_dst, warp_src)

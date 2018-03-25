@@ -2,11 +2,10 @@ import numpy as np
 
 class Smoother(object):
 
-    def __init__(self, runner, M, Minv, token_names, diff_thresholds):
+    def __init__(self, runner, M, token_names, diff_thresholds):
         self._runner = runner
         self._token_names = token_names
         self._M = M
-        self._Minv = Minv
 
         self._last = {tk: None for tk in token_names}
 
@@ -16,11 +15,11 @@ class Smoother(object):
 
         res = {}
 
-        self._runner.run(image=im, M=self._M, Minv=self._Minv)
+        self._runner.run(image=im, M=self._M)
 
         for tk in self._token_names:
 
-            val = runner[tk]
+            val = self._runner[tk]
 
             if self._last[tk] is None: # the first point
                 self._last[tk] = val
@@ -38,6 +37,10 @@ class Smoother(object):
             res[tk] = new_val
 
         return res
+
+    @property
+    def runner(self):
+        return self._runner
 
 
 class Memory(object):

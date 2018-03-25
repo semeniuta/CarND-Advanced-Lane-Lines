@@ -4,14 +4,17 @@ Generate the output images and videos, including rendering of the pipeline
 
 import os
 import matplotlib.image as mpimg
+import numpy as np
 import cv2
 from moviepy.editor import VideoFileClip
 from networkx.drawing.nx_agraph import to_agraph
 
+import lanelines
 import newlanespipeline
 import lanefinder
 from compgraph import CompGraph, CompGraphRunner
 from roadplane import prepare_perspective_transforms_custom
+from smooth import Smoother
 
 
 COMP_GRAPH = newlanespipeline.computational_graph
@@ -28,22 +31,58 @@ def get_full_paths_to_files(files_dir, filenames):
     return [os.path.join(files_dir, f) for f in filenames]
 
 
+def render_lane(im, im_warped, p_coefs_left, p_coefs_right, M_inv):
+
+    poly_y, poly_x_left, poly_x_right = lanelines.get_lane_polynomials_points(
+        im_warped, p_coefs_left, p_coefs_right
+    )
+
+    rendered = lanelines.lanefill(im, im_warped, M_inv, poly_y, poly_x_left, poly_x_right)
+    return rendered
+
+
 def create_processing_func(cg, cg_params, M, M_inv):
 
     runner = CompGraphRunner(cg, frozen_tokens=cg_params)
 
+    tokens = ('p_coefs_left', 'p_coefs_right')
+    thresholds = {
+        'p_coefs_left': np.array([0.8e-4, 0.1, 80.]),
+        'p_coefs_right': np.array([0.8e-4, 0.1, 80.])
+    }
+
+    smoother = Smoother(runner, M, tokens, thresholds)
+
     def process(im):
-        runner.run(image=im, M=M, Minv=Minv)
-        return runner['im_lane_rendering']
+
+        coefs = smoother(im)
+
+        res = render_lane(
+            im, runner['warped'], coefs['p_coefs_left'], coefs['p_coefs_right'], M_inv
+        )
+
+        return res
 
     return process
 
 
-def process_images(im_filenames, processing_func):
+def process_images(im_filenames, cg, cg_params, M, M_inv):
+
+    runner = CompGraphRunner(cg, frozen_tokens=cg_params)
+
+    def process(im):
+
+        runner.run(image=im, M=M)
+
+        rendered = render_lane(
+            im, runner['warped'], runner['p_coefs_left'], runner['p_coefs_right'], M_inv
+        )
+
+        return rendered
 
     images = (mpimg.imread(fname) for fname in im_filenames)
 
-    return (processing_func(im) for im in images)
+    return (process(im) for im in images)
 
 
 def save_images(images, destination_filenames):
@@ -93,7 +132,7 @@ if __name__ == '__main__':
 
     visualize_pipeline(os.path.join(dir_dst, 'pipeline.png'))
 
-    images_dst = process_images(im_files_src, process)
+    images_dst = process_images(im_files_src, COMP_GRAPH, DEFAULT_PARAMS, M, Minv)
     save_images(images_dst, im_files_dst)
 
     process_and_save_video(video_files_src[0], video_files_dst[0], process)

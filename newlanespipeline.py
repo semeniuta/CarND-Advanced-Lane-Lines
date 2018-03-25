@@ -19,8 +19,8 @@ func_dict = {
     'gather_thresholded_images': lanelines.gather_thresholded_images,
     'combine_thresholds_bitwise_or': lanelines.bitwise_or,
     'fit_lane_polynomials': lanelines.fit_lane_polynomials,
-    'get_lane_polynomials_points': lanelines.get_lane_polynomials_points,
-    'lanefill': lanelines.lanefill,
+    #'get_lane_polynomials_points': lanelines.get_lane_polynomials_points,
+    #'lanefill': lanelines.lanefill,
 
 }
 
@@ -43,8 +43,8 @@ func_io = {
     ),
     'combine_thresholds_bitwise_or': ('thresholded_images', 'all_thresholds'),
     'fit_lane_polynomials': (('all_thresholds', 'n_cells_x', 'n_cells_y', 'cell_threshold'), ('p_coefs_left', 'p_coefs_right', 'target_cells_coords_left', 'target_cells_coords_right')),
-    'get_lane_polynomials_points': (('warped_gray', 'p_coefs_left', 'p_coefs_right'), ('poly_y', 'poly_x_left', 'poly_x_right')),
-    'lanefill': (('image', 'warped', 'Minv', 'poly_y', 'poly_x_left', 'poly_x_right'), 'im_lane_rendering'),
+    #'get_lane_polynomials_points': (('warped_gray', 'p_coefs_left', 'p_coefs_right'), ('poly_y', 'poly_x_left', 'poly_x_right')),
+    #'lanefill': (('image', 'warped', 'Minv', 'poly_y', 'poly_x_left', 'poly_x_right'), 'im_lane_rendering'),
 
 }
 

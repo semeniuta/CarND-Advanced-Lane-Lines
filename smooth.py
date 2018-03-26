@@ -1,8 +1,22 @@
 import numpy as np
 
 class Smoother(object):
+    '''
+    Performs processing of a stream of images with build-in smooting
+    and outlier rejection
+    '''
 
     def __init__(self, runner, M, token_names, diff_thresholds):
+        '''
+        runner -- an instance of CompGraphRunner
+        M -- perspective transform matrix mapping from the original image
+             to the corresponding bird's-eye view of the road
+        token_names -- names of tokens to be smoothed / monitored for outliers
+        diff_thresholds -- a dictionary of threshold values on the absolute
+                           differences between two subsequent measurements
+                           (for each token in token_names)
+        '''
+
         self._runner = runner
         self._token_names = token_names
         self._M = M
@@ -44,6 +58,10 @@ class Smoother(object):
 
 
 class Memory(object):
+    '''
+    A container for storing n last values of a parameter of interest
+    (scalars or 1D NumPy arrays)
+    '''
 
     def __init__(self, size=5):
         self._data = []

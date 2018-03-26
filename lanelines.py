@@ -69,6 +69,18 @@ def sobel_direction(sobelx, sobely):
 
 
 def get_rectangle_corners_from_cbc(cbc, nx, ny):
+    '''
+    Get 4 points eclosing the chessboard region in an image
+
+    cbc -- a (n x 2) NumPy array with each chessboard corner as a row
+    nx, ny -- number of corners in x and y direction
+
+    Returns a (4 x 2) matrix with each point as a row:
+    [top left    ]
+    [top right   ]
+    [bottom right]
+    [bottom left ]
+    '''
 
     points = np.array([
         cbc[0,:],
@@ -81,6 +93,19 @@ def get_rectangle_corners_from_cbc(cbc, nx, ny):
 
 
 def get_rectangle_corners_in_image(im_sz, offset_x, offset_y):
+    '''
+    Get 4 points describing a rectangle in the image, offsetted
+    by the given amounts from the edges.
+
+    im_sz -- image size (cols, rows)
+    offset_x, offset_y -- offsets in pixels from the edges of the image
+
+    Returns a (4 x 2) matrix with each point as a row:
+    [top left    ]
+    [top right   ]
+    [bottom right]
+    [bottom left ]
+    '''
 
     points = np.array([
         [offset_x, offset_y],
@@ -93,24 +118,44 @@ def get_rectangle_corners_in_image(im_sz, offset_x, offset_y):
 
 
 def scale_image_255(im):
+    '''
+    Scale an image to pixel range [0, 255]
+    '''
+
     return np.uint8(255 * (im / np.max(im)))
 
 
 def mask_threashold_range(im, thresh_min, thresh_max):
+    '''
+    Return a binary mask image where pixel intensities
+    of the original image lie within [thresh_min, thresh_max)
+    '''
 
     binary_output = (im >= thresh_min) & (im < thresh_max)
     return np.uint8(binary_output)
 
 
 def warp(im, M, canvas_sz):
+    '''
+    Warp an image im given the perspective transformation matrix M and
+    the output image size canvas_sz
+    '''
+
     return cv2.warpPerspective(im, M, canvas_sz, flags=cv2.INTER_LINEAR)
 
 
 def convert_to_HLS(im):
+    '''
+    Convert an RGB image to HLS color space
+    '''
+
     return cv2.cvtColor(im, cv2.COLOR_RGB2HLS)
 
 
 def weighted_sum_images(images, weights):
+    '''
+    Perfrom a weighted sum of 2 or more images
+    '''
 
     assert len(weights) == len(images)
 
@@ -131,6 +176,9 @@ def weighted_sum_images(images, weights):
 
 
 def bitwise_or(images):
+    '''
+    Apply bitwise OR operation to a list of images
+    '''
 
     assert len(images) > 0
 
@@ -152,11 +200,20 @@ def weighted_HLS(H, L, S, weights):
 
 
 def add_contrast(im, gain):
+    '''
+    Add contrast to an image with the given gain.
+    The resulting image is scaled back to the [0, 255] range
+    '''
+
     gained = gain * im
     return scale_image_255(gained)
 
 
 def sobel_combo(im):
+    '''
+    Compute magnitude and direction of Sobel filter
+    applied to the supplied image
+    '''
 
     sobelx = sobel_x(im)
     sobely = sobel_y(im)
@@ -186,12 +243,29 @@ def get_hls_channels(im):
     return H, L, S
 
 def gray(im):
+    '''
+    Convert a BGR image to grayscale
+    '''
+
     return cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
 
+
 def gather_thresholded_images(*images):
+    '''
+    A helper function used during pipeline development
+    '''
     return images
 
+
 def lane_cells(im, nx, ny, threshold=20):
+    '''
+    Divides the supplied image into nx*ny equally-sized
+    subimages (cells), computes sum of cell pixels intesities, and
+    returns an array of cell indices, where the cell's sum is largest
+    per row and larger than the threshold.
+
+    The output array is of shape (n x 2), with a pair of cell indices per row.
+    '''
 
     cells = divide_image_to_cells(im, nx, ny)
 
@@ -214,6 +288,10 @@ def lane_cells(im, nx, ny, threshold=20):
 
 
 def lane_cells_real_coords(lanecells, im, nx, ny):
+    '''
+    Map the cell indices returned by lane_cells to the
+    coordinates of their centers.
+    '''
 
     rows, cols= im.shape[:2]
 
@@ -232,6 +310,12 @@ def lane_cells_real_coords(lanecells, im, nx, ny):
 
 
 def divide_image_to_cells(im, nx, ny):
+    '''
+    Divide the supplied image into nx*ny equally-sized
+    subimages (cells). Image shape has to be mutliple of nx, ny.
+
+    Returns list of cells, sliced from the original image row-by-row
+    '''
 
     rows, cols= im.shape[:2]
 
@@ -289,6 +373,10 @@ def split_image_lr_and_show(im):
 
 
 def get_polynomial_2(coefs):
+    '''
+    Get a fucntion object that maps a domain scalar
+    to the range value using the second degree polynomial
+    '''
 
     a, b, c = coefs
 
@@ -298,6 +386,11 @@ def get_polynomial_2(coefs):
     return f
 
 def fit_lane_polynomials(im, nx=50, ny=100, lanecell_threshold=70):
+    '''
+    Fit second degree polynomials to each half of the image
+    (containing left and right lane pixels respectively) using lane_cells
+    to detect high-intesity regions
+    '''
 
     left, right = split_image_lr(im)
 
@@ -315,6 +408,10 @@ def fit_lane_polynomials(im, nx=50, ny=100, lanecell_threshold=70):
 
 
 def get_lane_polynomials_points(warped_im, p_coefs_left, p_coefs_right):
+    '''
+    Get arrays of points (y, x_left, x_right) from the
+    corresponding polynomial coefficients
+    '''
 
     poly_left = get_polynomial_2(p_coefs_left)
     poly_right = get_polynomial_2(p_coefs_right)
@@ -327,6 +424,10 @@ def get_lane_polynomials_points(warped_im, p_coefs_left, p_coefs_right):
 
 
 def lanefill(image, warped, Minv, poly_y, poly_x_left, poly_x_right):
+    '''
+    Render the detected lane by reprojecting the bird's eye view image data
+    to the original image of the road
+    '''
 
     canvas = np.zeros_like(warped).astype(np.uint8)
 
@@ -343,12 +444,19 @@ def lanefill(image, warped, Minv, poly_y, poly_x_left, poly_x_right):
 
 
 def curvature_poly2(coefs, at_point):
+    '''
+    Measure curvature of a second-order polynomial at the given point
+    '''
 
     a, b, _ = coefs
     return ((1 + (2 * a * at_point + b) ** 2) ** 1.5) / np.abs(2 * a)
 
 
 def lane_curvature(coefs_1, coefs_2, pixels_per_meter, canvas_sz):
+    '''
+    Estimate lane curvature in meters by averaging curvatures of the
+    left and right lane lines
+    '''
 
     last_y = canvas_sz[1]
 

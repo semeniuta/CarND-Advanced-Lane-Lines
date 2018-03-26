@@ -7,6 +7,20 @@ from compgraph import CompGraphRunner
 
 
 def define_flat_plane_on_road(images, x_offset=0):
+    '''
+    Apply straightlanespipeline to images of a straight road
+    and return the averaged 4 points defining the region of
+    the rectangular plane on the flat road surface.
+
+    x_offset -- number of pixels by which the region is extended sideways
+
+    Returns a (4 x 2) matrix with each point as a row:
+    [top left    ]
+    [top right   ]
+    [bottom right]
+    [bottom left ]
+
+    '''
 
     runner = CompGraphRunner(
         slp.computational_graph,
@@ -37,6 +51,14 @@ def define_flat_plane_on_road(images, x_offset=0):
 
 
 def prepare_perspective_transforms(straight_images, canvas_sz, offset_x, offset_y):
+    '''
+    Compute perspective transformation matrices mapping from the original image
+    to the corresponding bird's-eye view of the road (and vice-versa).
+
+    straight_images -- images of a straight road
+    canvas_sz -- size (cols, rows) of the resulting warped image
+    offset_x, offset_y -- offsets in pixels from the edges of the warped image
+    '''
 
     warp_src = define_flat_plane_on_road(
         straight_images,
@@ -52,6 +74,9 @@ def prepare_perspective_transforms(straight_images, canvas_sz, offset_x, offset_
 
 
 def prepare_perspective_transforms_custom(canvas_sz=(500, 1500)):
+    '''
+    Custom perspective transformation function
+    '''
 
     OFFSET_X = 100
     OFFSET_Y = 0

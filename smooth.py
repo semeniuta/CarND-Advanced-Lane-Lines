@@ -14,6 +14,34 @@ def compute_diffs(arr):
     return np.array(diffs)
 
 
+class GenericSmoother(object):
+
+    def __init__(self, proc_func, diff_threshold):
+
+        self._proc_func = proc_func
+        self._diff_threshold = diff_threshold
+        self._last = None
+
+    def __call__(self, input_object):
+
+        val = self._proc_func(input_object)
+
+        if self._last is None: # the first point
+            self._last = val
+            return val
+
+        diff = val - self._last
+
+        if np.any( np.abs(diff) > self._diff_threshold ):
+            new_val = self._last
+        else:
+            new_val = 0.5 * (val + self._last)
+
+        self._last = new_val
+
+        return new_val
+
+
 class Smoother(object):
     '''
     Performs processing of a stream of images with build-in smooting

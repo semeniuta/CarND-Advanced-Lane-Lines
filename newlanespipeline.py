@@ -19,7 +19,7 @@ func_dict = {
     'gather_thresholded_images': lanelines.gather_thresholded_images,
     'combine_thresholds_bitwise_or': lanelines.bitwise_or,
     'fit_lane_polynomials': lanelines.fit_lane_polynomials,
-    'estimate_curvature': lanelines.lane_curvature,
+    #'estimate_curvature': lanelines.lane_curvature,
 
 }
 
@@ -45,7 +45,7 @@ func_io = {
         ('all_thresholds', 'n_cells_x', 'n_cells_y', 'cell_threshold'),
         ('p_coefs_left', 'p_coefs_right', 'target_cells_coords_left', 'target_cells_coords_right')
     ),
-    'estimate_curvature': (('p_coefs_left', 'p_coefs_right', 'pixels_per_meter', 'canvas_size'), 'curvature')
+    #'estimate_curvature': (('p_coefs_left', 'p_coefs_right', 'pixels_per_meter', 'canvas_size'), 'curvature')
 
 }
 
@@ -53,7 +53,7 @@ computational_graph = CompGraph(func_dict, func_io)
 
 parameters = {
     'canvas_size': (500, 1500),
-    'pixels_per_meter': 113.5,
+    #'pixels_per_meter': 113.5,
     'HLS_weights': [0, 0.4, 1.],
     'gray_from': 210,
     'gray_to': 255,

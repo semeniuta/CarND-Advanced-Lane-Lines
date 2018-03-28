@@ -466,6 +466,17 @@ def lane_curvature(coefs_1, coefs_2, pixels_per_meter, canvas_sz):
     return (0.5 * (c1 + c2)) / pixels_per_meter
 
 
+def render_lane(im, im_warped, p_coefs_left, p_coefs_right, M_inv):
+
+    poly_y, poly_x_left, poly_x_right = get_lane_polynomials_points(
+        im_warped, p_coefs_left, p_coefs_right
+    )
+
+    rendered = lanefill(im, im_warped, M_inv, poly_y, poly_x_left, poly_x_right)
+
+    return rendered
+
+
 def define_lanes_region(n_rows, n_cols, x_from=450, x_to=518, y_lim=317, left_offset=50, right_offset=0):
 
     vertices = np.array([[

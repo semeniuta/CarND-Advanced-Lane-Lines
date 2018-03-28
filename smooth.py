@@ -1,5 +1,19 @@
 import numpy as np
 
+
+def compute_diffs(arr):
+
+    n_records = arr.shape[0]
+    new_shape = (n_records-1,) + arr.shape[1:]
+
+    diffs = []
+
+    for i in range(1, n_records):
+        diffs.append( arr[i] - arr[i - 1] )
+
+    return np.array(diffs)
+
+
 class Smoother(object):
     '''
     Performs processing of a stream of images with build-in smooting
@@ -84,6 +98,9 @@ class Memory(object):
 
     def std(self):
         return np.std(self._data, axis=0)
+
+    def size(self):
+        return len(self._data)
 
     def is_empty(self):
         return self._data == []

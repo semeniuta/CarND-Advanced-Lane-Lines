@@ -31,16 +31,6 @@ def get_full_paths_to_files(files_dir, filenames):
     return [os.path.join(files_dir, f) for f in filenames]
 
 
-def render_lane(im, im_warped, p_coefs_left, p_coefs_right, M_inv):
-
-    poly_y, poly_x_left, poly_x_right = lanelines.get_lane_polynomials_points(
-        im_warped, p_coefs_left, p_coefs_right
-    )
-
-    rendered = lanelines.lanefill(im, im_warped, M_inv, poly_y, poly_x_left, poly_x_right)
-    return rendered
-
-
 def create_processing_func(cg, cg_params, M, M_inv):
 
     runner = CompGraphRunner(cg, frozen_tokens=cg_params)
@@ -57,7 +47,7 @@ def create_processing_func(cg, cg_params, M, M_inv):
 
         coefs = smoother(im)
 
-        res = render_lane(
+        res = lanelines.render_lane(
             im, runner['warped'], coefs['p_coefs_left'], coefs['p_coefs_right'], M_inv
         )
 
@@ -74,7 +64,7 @@ def process_images(im_filenames, cg, cg_params, M, M_inv):
 
         runner.run(image=im, M=M)
 
-        rendered = render_lane(
+        rendered = lanelines.render_lane(
             im, runner['warped'], runner['p_coefs_left'], runner['p_coefs_right'], M_inv
         )
 

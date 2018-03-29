@@ -26,20 +26,53 @@ class GenericSmoother(object):
 
         val = self._proc_func(input_object)
 
-        if self._last is None: # the first point
-            self._last = val
+        if self._first_run():
+            self._remember_value(val)
             return val
 
-        diff = val - self._last
+        diff = val - self._get_last()
 
         if np.any( np.abs(diff) > self._diff_threshold ):
-            new_val = self._last
+            new_val = self._get_last()
         else:
-            new_val = 0.5 * (val + self._last)
+            new_val = self._average(val)
 
-        self._last = new_val
+        self._remember_value(new_val)
 
         return new_val
+
+    def _first_run(self):
+        return self._last is None
+
+    def _average(self, val):
+        return 0.5 * (val + self._last)
+
+    def _get_last(self):
+        return self._last
+
+    def _remember_value(self, val):
+        self._last = val
+
+
+class GenericSmootherWithMemory(GenericSmoother):
+
+    def __init__(self, proc_func, diff_threshold, memory_size=4):
+
+        self._proc_func = proc_func
+        self._diff_threshold = diff_threshold
+        self._mem = Memory(memory_size)
+
+    def _first_run(self):
+        return self._mem.is_empty()
+
+    def _average(self, val):
+        return 0.5 * (val + self._mem.mean())
+
+    def _get_last(self):
+        return self._mem.last()
+
+    def _remember_value(self, val):
+        self._mem.insert(val)
 
 
 class Smoother(object):

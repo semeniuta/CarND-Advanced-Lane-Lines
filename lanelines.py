@@ -476,6 +476,9 @@ def render_lane(im, im_warped, p_coefs_left, p_coefs_right, M_inv):
 
     return rendered
 
+def put_text_on_top(im, text):
+    cv2.putText(im, text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2, cv2.LINE_AA)
+
 
 def define_lanes_region(n_rows, n_cols, x_from=450, x_to=518, y_lim=317, left_offset=50, right_offset=0):
 

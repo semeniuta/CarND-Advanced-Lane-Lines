@@ -480,6 +480,24 @@ def put_text_on_top(im, text):
     cv2.putText(im, text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2, cv2.LINE_AA)
 
 
+def pixel_to_meter_ratios_custom():
+    '''
+    Get a rough transformation from pixels to meters (in x and y direction)
+    for a warped image of size (500, 1500)
+    '''
+
+    pix_lane = 270. # lane width in pixels
+    pix_dash = 180. # lane dash length in pixels
+
+    m_lane = 3.7 # lane width in meters
+    m_dash = 3.0 # lane dash length in meters
+
+    p_x = m_lane / pix_lane
+    p_y = m_dash / pix_dash
+
+    return p_x, p_y
+
+
 def define_lanes_region(n_rows, n_cols, x_from=450, x_to=518, y_lim=317, left_offset=50, right_offset=0):
 
     vertices = np.array([[

@@ -385,26 +385,36 @@ def get_polynomial_2(coefs):
 
     return f
 
-def fit_lane_polynomials(im, nx=50, ny=100, lanecell_threshold=70):
+
+def get_target_cells_coordinates(im, nx=50, ny=100, lanecell_threshold=70):
     '''
-    Fit second degree polynomials to each half of the image
-    (containing left and right lane pixels respectively) using lane_cells
-    to detect high-intesity regions
+    Get image coordinates of the high-intesity target cells
+    returned by lane_cells for both the left and the right lane line
     '''
 
     left, right = split_image_lr(im)
 
-    target_cells_left = lane_cells(left, nx, ny, threshold=70)
-    target_cells_coords_left = lane_cells_real_coords(target_cells_left, left, nx, ny)
-    p_coefs_left = np.polyfit(target_cells_coords_left[:, 1], target_cells_coords_left[:, 0], 2)
+    target_cells_left = lane_cells(left, nx, ny, lanecell_threshold)
+    coords_left = lane_cells_real_coords(target_cells_left, left, nx, ny)
 
-    target_cells_right = lane_cells(right, nx, ny, threshold=70)
-    target_cells_coords_right = lane_cells_real_coords(target_cells_right, right, nx, ny)
-    target_cells_coords_right[:, 0] += left.shape[1]
-    p_coefs_right = np.polyfit(target_cells_coords_right[:, 1], target_cells_coords_right[:, 0], 2)
+    target_cells_right = lane_cells(right, nx, ny, lanecell_threshold)
+    coords_right = lane_cells_real_coords(target_cells_right, right, nx, ny)
+    coords_right[:, 0] += left.shape[1]
 
-    return p_coefs_left, p_coefs_right, target_cells_coords_left, target_cells_coords_right
+    return coords_left, coords_right
 
+
+def fit_lane_polynomials(coords_left, coords_right):
+    '''
+    Fit second degree polynomials to sets of left and right
+    pixel coordinates indicating high-intesity values
+    (returned by get_target_cells_coordinates)
+    '''
+
+    p_coefs_left = np.polyfit(coords_left[:, 1], coords_left[:, 0], 2)
+    p_coefs_right = np.polyfit(coords_right[:, 1], coords_right[:, 0], 2)
+
+    return p_coefs_left, p_coefs_right
 
 
 def get_lane_polynomials_points(warped_im, p_coefs_left, p_coefs_right):
@@ -452,18 +462,30 @@ def curvature_poly2(coefs, at_point):
     return ((1 + (2 * a * at_point + b) ** 2) ** 1.5) / np.abs(2 * a)
 
 
-def lane_curvature(coefs_1, coefs_2, pixels_per_meter, canvas_sz):
+def pixel_points_to_meters(points, meters_in_pix_x, meters_in_pix_y):
+
+    res = np.zeros_like(points, dtype=np.float32)
+    res[:, 0] = points[:, 0] * meters_in_pix_x
+    res[:, 1] = points[:, 1] * meters_in_pix_y
+
+    return res
+
+
+def lane_curvature(estpoints_left, estpoints_right, meters_in_pix_x, meters_in_pix_y, canvas_sz):
     '''
-    Estimate lane curvature in meters by averaging curvatures of the
-    left and right lane lines
+    Estimate lane curvature in meters
     '''
 
-    last_y = canvas_sz[1]
+    points_left = pixel_points_to_meters(estpoints_left, meters_in_pix_x, meters_in_pix_y)
+    points_right = pixel_points_to_meters(estpoints_right, meters_in_pix_x, meters_in_pix_y)
 
-    c1 = curvature_poly2(coefs_1, last_y)
-    c2 = curvature_poly2(coefs_2, last_y)
+    coefs_left, coefs_right = fit_lane_polynomials(points_left, points_right)
 
-    return (0.5 * (c1 + c2)) / pixels_per_meter
+    at_y = canvas_sz[1] * meters_in_pix_y
+    c1 = curvature_poly2(coefs_left, at_y)
+    c2 = curvature_poly2(coefs_right, at_y)
+
+    return c1, c2
 
 
 def render_lane(im, im_warped, p_coefs_left, p_coefs_right, M_inv):

@@ -485,7 +485,7 @@ def lane_curvature(estpoints_left, estpoints_right, meters_in_pix_x, meters_in_p
     c1 = curvature_poly2(coefs_left, at_y)
     c2 = curvature_poly2(coefs_right, at_y)
 
-    return c1, c2
+    return 0.5 * (c1 + c2)
 
 
 def render_lane(im, im_warped, p_coefs_left, p_coefs_right, M_inv):

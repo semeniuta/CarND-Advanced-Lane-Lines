@@ -461,6 +461,19 @@ def curvature_poly2(coefs, at_point):
     a, b, _ = coefs
     return ((1 + (2 * a * at_point + b) ** 2) ** 1.5) / np.abs(2 * a)
 
+def curvature_poly2_in_meters(coefs, at_point, meters_in_pix_x, meters_in_pix_y):
+    '''
+    Curvature calculation based on polynomial
+    coefficients estimated from pixel points
+    '''
+
+    a, b, _ = coefs
+
+    m_a = meters_in_pix_x / (meters_in_pix_y**2) * a
+    m_b = (meters_in_pix_x / meters_in_pix_y) * b
+
+    return ((1 + (2 * m_a * at_point + m_b) ** 2) ** 1.5) / np.abs(2 * m_a)
+
 
 def pixel_points_to_meters(points, meters_in_pix_x, meters_in_pix_y):
 
@@ -471,19 +484,15 @@ def pixel_points_to_meters(points, meters_in_pix_x, meters_in_pix_y):
     return res
 
 
-def lane_curvature(estpoints_left, estpoints_right, meters_in_pix_x, meters_in_pix_y, canvas_sz):
+def lane_curvature(coefs_left, coefs_right, meters_in_pix_x, meters_in_pix_y, canvas_sz):
     '''
     Estimate lane curvature in meters
     '''
 
-    points_left = pixel_points_to_meters(estpoints_left, meters_in_pix_x, meters_in_pix_y)
-    points_right = pixel_points_to_meters(estpoints_right, meters_in_pix_x, meters_in_pix_y)
-
-    coefs_left, coefs_right = fit_lane_polynomials(points_left, points_right)
-
     at_y = canvas_sz[1] * meters_in_pix_y
-    c1 = curvature_poly2(coefs_left, at_y)
-    c2 = curvature_poly2(coefs_right, at_y)
+
+    c1 = curvature_poly2_in_meters(coefs_left, at_y, meters_in_pix_x, meters_in_pix_y)
+    c2 = curvature_poly2_in_meters(coefs_right, at_y, meters_in_pix_x, meters_in_pix_y)
 
     return 0.5 * (c1 + c2)
 

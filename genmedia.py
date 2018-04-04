@@ -11,11 +11,9 @@ from networkx.drawing.nx_agraph import to_agraph
 
 import lanelines
 import newlanespipeline
-import lanefinder
 from compgraph import CompGraph, CompGraphRunner
 from roadplane import prepare_perspective_transforms_custom
-from smooth import Smoother
-
+from smooth import Smoother, GenericSmoother, GenericSmootherWithMemory, Memory, compute_diffs
 
 COMP_GRAPH = newlanespipeline.computational_graph
 DEFAULT_PARAMS = newlanespipeline.parameters
@@ -31,7 +29,14 @@ def get_full_paths_to_files(files_dir, filenames):
     return [os.path.join(files_dir, f) for f in filenames]
 
 
-def create_processing_func(cg, cg_params, M, M_inv):
+def create_processing_func(
+    cg,
+    cg_params,
+    M,
+    M_inv,
+    memory_size=10,
+    diff_threshold=int(1e4)
+):
 
     runner = CompGraphRunner(cg, frozen_tokens=cg_params)
 
@@ -41,17 +46,29 @@ def create_processing_func(cg, cg_params, M, M_inv):
         'p_coefs_right': np.array([0.8e-4, 0.1, 80.])
     }
 
-    smoother = Smoother(runner, M, tokens, thresholds)
+    mx, my = lanelines.pixel_to_meter_ratios_custom()
+
+    coefs_smoother = Smoother(runner, M, tokens, thresholds)
+
+    def curv(coefs):
+        return lanelines.lane_curvature(coefs['p_coefs_left'], coefs['p_coefs_right'], mx, my, runner['canvas_size'])
+
+    curv_smoother = GenericSmootherWithMemory(curv, diff_threshold, memory_size)
 
     def process(im):
 
-        coefs = smoother(im)
+        coefs = coefs_smoother(im)
 
-        res = lanelines.render_lane(
+        rendered_im = lanelines.render_lane(
             im, runner['warped'], coefs['p_coefs_left'], coefs['p_coefs_right'], M_inv
         )
 
-        return res
+        curvature = curv_smoother(coefs)
+
+        im_text = 'Curvature: {:.2f} m'.format(curvature)
+        lanelines.put_text_on_top(rendered_im, im_text)
+
+        return rendered_im
 
     return process
 

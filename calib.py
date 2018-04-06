@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import os
 from glob import glob
+import lanelines
 
 
 def get_image_size(im):
@@ -49,6 +50,16 @@ def get_pattern_points(pattern_size, square_size):
     pattern_points[:,:2] = np.indices(pattern_size).T.reshape(-1, 2)
     pattern_points *= square_size
     return pattern_points
+
+
+def undistort_cb_and_find_corners(im, cm, dc, nx, ny):
+
+    im_sz = lanelines.get_im_wh(im)
+    undist = cv2.undistort(im, cm, dc)
+    gray = cv2.cvtColor(undist, cv2.COLOR_RGB2GRAY)
+
+    found_cbc, cbc = find_cbc(gray, pattern_size=(nx, ny))
+    return found_cbc, cbc, undist
 
 
 def do_calibration(im_dir, psize, sqsize):

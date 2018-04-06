@@ -15,6 +15,14 @@ def compute_diffs(arr):
 
 
 class GenericSmoother(object):
+    '''
+    Performs smoothing of a function output for a sequence
+    of inputs. The smooting is done by averaging the current
+    function output and the previous one. If any dimension of
+    the absolute difference between two subsequent outputs
+    exceeds the supplied threshold, the previous output value
+    is used.
+    '''
 
     def __init__(self, proc_func, diff_threshold):
 
@@ -55,6 +63,17 @@ class GenericSmoother(object):
 
 
 class GenericSmootherWithMemory(GenericSmoother):
+    '''
+    Performs smoothing of a function output for a sequence
+    of inputs. The smooting is done by averaging the current
+    function output and the mean of last n outputs
+    (saved with a Memory object).
+
+    Similarly to GenericSmoother, if any dimension of
+    the absolute difference between two subsequent outputs
+    exceeds the supplied threshold, the previous output value
+    is used.
+    '''
 
     def __init__(self, proc_func, diff_threshold, memory_size=4):
 
@@ -77,8 +96,8 @@ class GenericSmootherWithMemory(GenericSmoother):
 
 class Smoother(object):
     '''
-    Performs processing of a stream of images with build-in smooting
-    and outlier rejection
+    Performs processing of a stream of images using a computational graph
+    runner with build-in smooting and outlier rejection
     '''
 
     def __init__(self, runner, M, token_names, diff_thresholds):

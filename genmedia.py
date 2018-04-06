@@ -34,6 +34,8 @@ def create_processing_func(
     cg_params,
     M,
     M_inv,
+    cm,
+    dc,
     memory_size=25,
     diff_threshold=int(1e4)
 ):
@@ -42,7 +44,7 @@ def create_processing_func(
     Create a function object for processing each frame of
     a  video file. The returned function accepts an image,
     performs lane detection on it, and returns an image with rendered
-    lane and text on curvature and offset from center measurements.
+    lane region and text on curvature and offset from center measurements.
     '''
 
     runner = CompGraphRunner(cg, frozen_tokens=cg_params)
@@ -62,7 +64,9 @@ def create_processing_func(
 
     curv_smoother = GenericSmootherWithMemory(curv, diff_threshold, memory_size)
 
-    def process(im):
+    def process(frame):
+
+        im = cv2.undistort(frame, cm, dc)
 
         coefs = coefs_smoother(im)
 
@@ -92,11 +96,18 @@ def create_processing_func(
     return process
 
 
-def process_images(im_filenames, cg, cg_params, M, M_inv):
+def process_images(im_filenames, cg, cg_params, M, M_inv, cm, dc):
+    '''
+    Process images with the lane detection pipeline
+    and return the corresponding images with rendered
+    lane region and text on curvature and offset from center measurements
+    '''
 
     runner = CompGraphRunner(cg, frozen_tokens=cg_params)
 
-    def process(im):
+    def process(im_orig):
+
+        im = cv2.undistort(im_orig, cm, dc)
 
         runner.run(image=im, M=M)
 
@@ -126,6 +137,10 @@ def process_and_save_video(video_fname_src, video_fname_dst, processing_func):
 
 
 def visualize_pipeline(fname_dst, cg=COMP_GRAPH, params=DEFAULT_PARAMS):
+    '''
+    Visualize lane detection pipeline using Graphviz
+    and save the resulting image on disk
+    '''
 
     runner = CompGraphRunner(cg, frozen_tokens=params)
 
@@ -137,6 +152,9 @@ def visualize_pipeline(fname_dst, cg=COMP_GRAPH, params=DEFAULT_PARAMS):
 if __name__ == '__main__':
 
     ''' INITIALIZATION '''
+
+    cm = np.load('serialize/camera_matrix.npy')
+    dc = np.load('serialize/dist_coefs.npy')
 
     im_dir_src = 'test_images'
     im_files_src = get_full_paths_to_files(im_dir_src, os.listdir(im_dir_src))
@@ -154,11 +172,11 @@ if __name__ == '__main__':
     ''' MEDIA GENERATION '''
 
     M, Minv = prepare_perspective_transforms_custom()
-    process = create_processing_func(COMP_GRAPH, DEFAULT_PARAMS, M, Minv)
+    process = create_processing_func(COMP_GRAPH, DEFAULT_PARAMS, M, Minv, cm, dc)
 
     visualize_pipeline(os.path.join(dir_dst, 'pipeline.png'))
 
-    images_dst = process_images(im_files_src, COMP_GRAPH, DEFAULT_PARAMS, M, Minv)
+    images_dst = process_images(im_files_src, COMP_GRAPH, DEFAULT_PARAMS, M, Minv, cm, dc)
     save_images(images_dst, im_files_dst)
 
     process_and_save_video(video_files_src[0], video_files_dst[0], process)

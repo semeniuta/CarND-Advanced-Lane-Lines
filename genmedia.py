@@ -34,9 +34,16 @@ def create_processing_func(
     cg_params,
     M,
     M_inv,
-    memory_size=10,
+    memory_size=25,
     diff_threshold=int(1e4)
 ):
+
+    '''
+    Create a function object for processing each frame of
+    a  video file. The returned function accepts an image,
+    performs lane detection on it, and returns an image with rendered
+    lane and text on curvature and offset from center measurements.
+    '''
 
     runner = CompGraphRunner(cg, frozen_tokens=cg_params)
 
@@ -65,8 +72,20 @@ def create_processing_func(
 
         curvature = curv_smoother(coefs)
 
-        im_text = 'Curvature: {:.2f} m'.format(curvature)
-        lanelines.put_text_on_top(rendered_im, im_text)
+        m_offset, _ = lanelines.lane_offset_from_center(
+            runner['warped'],
+            coefs['p_coefs_left'],
+            coefs['p_coefs_right'],
+            mx
+        )
+
+        offset_direction = 'left' if m_offset > 0 else 'right'
+
+        curv_text = 'Curvature: {:.2f} m'.format(curvature)
+        offset_text = 'Offset from center: {:.2f} m (to the {})'.format(np.abs(m_offset), offset_direction)
+
+        lanelines.put_text_on_top(rendered_im, curv_text, fontscale=1.2)
+        lanelines.put_text_on_top(rendered_im, offset_text, fontscale=1.2, pos=(10, 120))
 
         return rendered_im
 

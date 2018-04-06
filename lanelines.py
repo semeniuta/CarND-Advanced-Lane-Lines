@@ -497,6 +497,36 @@ def lane_curvature(coefs_left, coefs_right, meters_in_pix_x, meters_in_pix_y, ca
     return 0.5 * (c1 + c2)
 
 
+def lane_center(xleft, xright):
+
+    lane_len = xright - xleft
+
+    return xleft + 0.5 * lane_len
+
+
+def lane_offset_from_center(
+    warped_im,
+    p_coefs_left,
+    p_coefs_right,
+    meters_in_pix_x
+):
+
+    poly_left = get_polynomial_2(p_coefs_left)
+    poly_right = get_polynomial_2(p_coefs_right)
+
+    y_bottom = warped_im.shape[0]
+    xleft = poly_left(y_bottom)
+    xright = poly_right(y_bottom)
+
+    pix_center = lane_center(xleft, xright)
+
+    n_cols = warped_im.shape[1]
+    pix_offset = n_cols / 2. - pix_center
+    m_offset = pix_offset * meters_in_pix_x
+
+    return m_offset, pix_center
+
+
 def render_lane(im, im_warped, p_coefs_left, p_coefs_right, M_inv):
 
     poly_y, poly_x_left, poly_x_right = get_lane_polynomials_points(
@@ -507,8 +537,8 @@ def render_lane(im, im_warped, p_coefs_left, p_coefs_right, M_inv):
 
     return rendered
 
-def put_text_on_top(im, text):
-    cv2.putText(im, text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2, cv2.LINE_AA)
+def put_text_on_top(im, text, fontscale=2, pos=(10, 60)):
+    cv2.putText(im, text, pos, cv2.FONT_HERSHEY_SIMPLEX, fontscale, (255, 255, 255), 2, cv2.LINE_AA)
 
 
 def pixel_to_meter_ratios_custom():
